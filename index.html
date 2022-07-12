@@ -5,70 +5,220 @@
 		<title>APP TEST</title>		
 		<script type="text/javascript" src=""></script>	
 		<script>
-			function requestUserRepos(username){
-				
-				// Create new XMLHttpRequest object
+			var nomeUsrRepo = 'FabricioGanzert';
+			var ords = null;	
+			var pesq = null;
+			var data_ = null;
+			var modesrt = 0;//padrao pesquisa ordem alfabetica
+			reqUserRepos=(username)=>{
+				window.data_ = null
 				const xhr = new XMLHttpRequest();
-				
-				// GitHub endpoint, dynamically passing in specified username
 				const url = `https://api.github.com/users/${username}/repos`;
-				
-				// Open a new connection, using a GET request via URL endpoint
-				// Providing 3 arguments (GET/POST, The URL, Async True/False)
 				xhr.open('GET', url, true);
-				
-				// When request is received
-				// Process it here
-				xhr.onload = function() {
-				
-					// Parse API data into JSON
-					const data = JSON.parse(this.response);
-					
-					// Log the response
-					console.log(data);
-					
-					// Loop over each object in data array
-					for (let i in data) 
+				xhr.onload = function() 
+				{
+					window.data_= JSON.parse(this.response);					
+					for (let i in window.data_) 
 					{
-					
-						// Log the repo name
-						console.log('Repo:', data[i].name);
+						window.data_[i].dt = new Date(window.data_[i].pushed_at);
+					}					
+				}
+				xhr.send();				
+			};
+			
+			listRepos=(modesort)=>{
+				window.modesrt = modesort;
+				verlistRepos();			
+			};
 						
-						// Log the repo description
-						console.log('Description:', data[i].description);
-						
-						// Log the repo url
-						console.log('URL:', data[i].html_url);
-						
-						// Add a separator between each repo
-						console.log('=========================')
-					
+			verlistRepos=()=>{			
+				ords.style.visibility="hidden";
+				pesq.style.visibility="hidden";				
+				var btnlst = document.getElementById("btnlist");
+				btnlst.style.backgroundColor = "grey";				
+				btnlst.disabled = true;
+				var cntRepos = 0;
+				var filter = parseInt(document.getElementById("filtro").value);				
+				var cnt = document.getElementById("counter");
+				var ul = document.getElementById("repolist");			
+				ul.innerHTML = "";
+				var arrlist = [];				
+				if(window.modesrt==0) //ordem alfabetica
+				{		
+					window.data_.sort(function(a, b){
+					 var nameA = a.name.toLowerCase(), nameB = b.name.toLowerCase();
+					 if (nameA < nameB)
+					  return -1;
+					 if (nameA > nameB)
+					  return 1;
+					 return 0;
+					});	
+				}								
+				else if(window.modesrt==1) //ordem pela data do ultimo commit
+				{	
+					window.data_.sort((a, b) => a.dt - b.dt);
+				}
+				for (let i in window.data_) 
+				{
+					arrlist[i] = [];									
+					switch(filter)
+					{					
+						case 0: //todos					
+							arrlist[i].push(window.data_[i].name);
+							arrlist[i].push(window.data_[i].description);
+							arrlist[i].push(window.data_[i].html_url);
+							arrlist[i].push(window.data_[i].pushed_at);
+							cntRepos++;
+						break;
+						case 1: //privados
+							if(window.data_[i].private=='false')
+							{
+								arrlist[i].push(window.data_[i].name);
+								arrlist[i].push(window.data_[i].description);
+								arrlist[i].push(window.data_[i].html_url);						
+								arrlist[i].push(window.data_[i].pushed_at);								
+								cntRepos++;								
+							}
+						break;
+						case 2://publicos
+							if(window.data_[i].private!=='false')
+							{
+								arrlist[i].push(window.data_[i].name);
+								arrlist[i].push(window.data_[i].description);
+								arrlist[i].push(window.data_[i].html_url);						
+								arrlist[i].push(window.data_[i].pushed_at);
+								cntRepos++;
+							}						
+						break;						
+					}
+				}
+				var strRepo = '';				
+					for(var j=0;j<cntRepos;j++)
+					{
+						strRepo = 'Repo: <b>' + arrlist[j][0] + '</b> - Descrição: <b>' + arrlist[j][1] + '</b> - URL: <b>' + arrlist[j][2] + '</b> - Last Commit: <b>' + arrlist[j][3] + '<br>';
+						var li = document.createElement("li");					
+						li.innerHTML = strRepo;
+						ul.appendChild(li);						
 					}
 
+					cnt.innerHTML = cntRepos==1?"1 repositorio encontrado.":cntRepos+" repositorios encontrados.";
+					
+					btnlst.disabled = false;
+					btnlst.style.backgroundColor = "green";
+					if(cntRepos>0)
+					{
+						ords.style.visibility="visible";
+						pesq.style.visibility="visible";
+					}
+			};	
+			
+			searchList=()=>{
+				var k = document.getElementById("q");
+				if(k.value.length==0)
+				{
+					listRepos(window.modesrt);				
 				}
-				
-				// Send the request to the server
-				xhr.send();
-				
-			}
+				else
+				{
+					var filter, ul, li, a, i, txtValue;
+					filter = k.value.toLowerCase();
+					ul = document.getElementById("repolist");
+					li = ul.getElementsByTagName("li");
+					for (i = 0; i < li.length; i++) 
+					{
+						var txtValue = li[i].textContent;
+						if (txtValue.toLowerCase().indexOf(filter) > -1) 
+						{
+							li[i].style.display = "";
+						} 
+						else 
+						{
+							li[i].style.display = "none";
+						}
+					}
+				}
+			};
 
-			// Call function passing in 'facebook' as GitHub username
-			requestUserRepos('FabricioGanzert');			
+			reqUserRepos(window.nomeUsrRepo);						
 		</script>	
 		<style type="text/css">
-
+			body{
+				padding:10px;
+				margin:10px;
+				font-family:arial;
+				font-size:13px;
+			}
+			
+			select{
+				border-radius:6px;
+				width:180px;
+				line-height:20px;
+				border:1px solid #cccccc;				
+				font-size:11px;
+			}
+			
+			input[type="button"]{
+				background-color:green;
+				color:#ffffff;
+				border-radius:6px;
+				width:180px;
+				line-height:20px;
+			}
+			
+			.counter{
+				font-size:12px;
+				color:#ff0000;
+				font-weight:bold;
+			}
+			
+			.ord{
+				background-color:orange !important;
+			} 
+			
+			ul li{
+				font-size:14px;
+			}
+			
+			#q{
+				width:150px;
+			}
 		</style>
 	</head>	
 	<body>	
-
-
-
-OLHA EU AKI
+		<h3>Desafio Teste - Meus Repositorios GITHub</h3>
+		<p>
+			Filtrar por:<br>
+			<select id="filtro" name="filtro">
+				<option value="0">Todos os Repositorios</option>
+				<option value="1">Somente Repositorios Privados</option>				
+				<option value="2">Somente Repositorios Publicos</option>
+			</select>
+		</p>
 	
-	
+		<p>
+			<input id="btnlist" type="button" onclick="listRepos(0)" value="&#128203; Mostrar Listagem" />
+		</p>
+
+		<p>
+			<span id='ordbtns'>
+				<input id="ord1" type="button" class="ord" onclick="listRepos(0)" value="Ordem Alfabética" />&nbsp;&nbsp;
+				<input id="ord2" type="button" class="ord" onclick="listRepos(1)" value="Ordem por Data do Commit" />&nbsp;&nbsp;			
+			</span>
+			<span id='pesq'>			
+				<input type="text" id="q" name="q" onkeyup="searchList();" placeholder="pesquisar repositorio... &#x1F50D;" />
+			</span>			
+			<ul id="repolist"></ul>
+		</p>		
+		
+		<p>	
+			<span id="counter" class="counter"></span>
+		</p>
 		
 		<script>
-		
-		</script>	
+			ords = document.getElementById("ordbtns");		
+			ords.style.visibility="hidden";
+			pesq = document.getElementById("pesq");
+			pesq.style.visibility="hidden";			
+		</script>
 	</body>	
 </html>
